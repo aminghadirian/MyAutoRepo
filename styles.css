@@ -1,0 +1,251 @@
+:root {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --text: #1f2a44;
+  --accent: #2f6fed;
+  --muted: #687089;
+  --ok: #0d8f44;
+  --bad: #b22828;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 4px 16px rgb(31 42 68 / 0.08);
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+select,
+button {
+  width: 100%;
+  font-size: 1rem;
+  border-radius: 10px;
+}
+
+select {
+  border: 1px solid #d6d9e4;
+  background: #fff;
+  padding: 0.65rem;
+}
+
+.theory {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.board-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.pill {
+  background: #e7efff;
+  color: var(--accent);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.progress-track {
+  margin-top: 0.65rem;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #edf1fa;
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #6a91ff, #2f6fed);
+  transition: width 0.25s ease;
+}
+
+.curriculum-list {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.curriculum-list li {
+  border: 1px solid #e1e6f5;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9rem;
+  color: #344063;
+  background: #fbfcff;
+}
+
+.curriculum-list li.locked {
+  opacity: 0.6;
+}
+
+.curriculum-list li.active {
+  border-color: #a7beff;
+  background: #edf3ff;
+}
+
+.curriculum-list li.done {
+  border-color: #b5e4c5;
+  background: #ebf8f0;
+}
+
+.board {
+  margin: 0.8rem auto;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(30px, 1fr));
+  width: min(100%, 420px);
+  border: 2px solid #202741;
+  background: #fff;
+}
+
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid #cfd5e5;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  color: #1d2540;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cell:nth-child(3n) {
+  border-right: 2px solid #202741;
+}
+
+.cell:nth-child(9n) {
+  border-right: none;
+}
+
+.cell[data-row="2"],
+.cell[data-row="5"] {
+  border-bottom: 2px solid #202741;
+}
+
+.cell.given {
+  background: #f0f3ff;
+}
+
+.cell.candidate {
+  font-size: 0.61rem;
+  font-weight: 600;
+  color: #475173;
+  text-align: center;
+  line-height: 1.1;
+  padding: 0.2rem;
+}
+
+.cell.selected {
+  background: #cfe1ff;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cell.target {
+  background: #e6f8ec;
+}
+
+.instruction {
+  min-height: 2.4rem;
+  color: var(--text);
+}
+
+.actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+button {
+  border: none;
+  padding: 0.72rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+button.secondary {
+  background: #eef2fb;
+  color: #2a3350;
+}
+
+.feedback {
+  min-height: 1.3rem;
+  margin: 0.8rem 0 0;
+  font-weight: 700;
+}
+
+.feedback.ok {
+  color: var(--ok);
+}
+
+.feedback.bad {
+  color: var(--bad);
+}
+
+.notes-panel h3 {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+
+.notes-panel p {
+  margin: 0.2rem 0 0.7rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+@media (min-width: 720px) {
+  .actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

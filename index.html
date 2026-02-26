@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sudoku Technique Trainer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Sudoku Technique Trainer</h1>
+        <p class="subtitle">Practice one advanced solving step at a time.</p>
+      </header>
+
+      <section class="panel">
+        <label for="technique">Technique</label>
+        <select id="technique"></select>
+        <p id="techniqueTheory" class="theory"></p>
+      </section>
+
+      <section class="panel">
+        <div class="board-header">
+          <h2>Curriculum Path</h2>
+          <span id="masteryPill" class="pill">0% mastered</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div id="masteryFill" class="progress-fill"></div>
+        </div>
+        <p id="curriculumText" class="theory"></p>
+        <ul id="curriculumList" class="curriculum-list"></ul>
+      </section>
+
+      <section class="panel trainer-panel">
+        <div class="board-header">
+          <h2 id="scenarioTitle">Scenario</h2>
+          <span id="progressPill" class="pill">Step 1/1</span>
+        </div>
+        <div id="board" class="board" aria-label="Sudoku board"></div>
+        <p class="instruction" id="instruction"></p>
+        <div class="actions">
+          <button id="checkBtn">Check Selection</button>
+          <button id="hintBtn" class="secondary">Hint</button>
+          <button id="nextBtn" class="secondary">Next Scenario</button>
+        </div>
+        <p id="feedback" class="feedback"></p>
+      </section>
+
+      <section class="panel notes-panel">
+        <h3>Selected Cells</h3>
+        <p id="selectedCells">None</p>
+        <h3>Why this works</h3>
+        <p id="explanation"></p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
