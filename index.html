@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sudoku Technique Trainer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Sudoku Technique Trainer</h1>
+        <p class="subtitle">Train one method pattern at a time.</p>
+      </header>
+
+      <section class="panel">
+        <label for="methodSelect">Method</label>
+        <select id="methodSelect"></select>
+        <p id="methodTheory" class="theory"></p>
+      </section>
+
+      <details class="panel curriculum-panel" id="curriculumPanel">
+        <summary>
+          <span>Curriculum Path</span>
+          <span id="curriculumPreview" class="summary-preview"></span>
+          <span id="masteryPill" class="pill">0%</span>
+        </summary>
+        <div class="progress-track"><div id="masteryFill" class="progress-fill"></div></div>
+        <ul id="curriculumList" class="curriculum-list"></ul>
+      </details>
+
+      <section class="panel trainer-panel">
+        <div class="board-header">
+          <h2 id="scenarioTitle">Puzzle</h2>
+          <span id="progressPill" class="pill">1/3</span>
+        </div>
+        <div id="board" class="board"></div>
+        <p id="instruction" class="instruction"></p>
+
+        <div class="panel input-panel">
+          <div class="board-header">
+            <h3>Cell Input</h3>
+            <button id="noteModeBtn" class="secondary small" type="button">Pencil Off</button>
+          </div>
+          <div id="digitPad" class="digit-pad"></div>
+          <button id="clearCellBtn" class="secondary" type="button">Clear Active Cell</button>
+        </div>
+
+        <div class="actions">
+          <button id="checkBtn">Check Selection</button>
+          <button id="hintBtn" class="secondary">Hint</button>
+          <button id="nextBtn" class="secondary">Next Puzzle</button>
+        </div>
+        <p id="feedback" class="feedback"></p>
+      </section>
+
+      <section class="panel notes-panel">
+        <h3>Selected Cells</h3>
+        <p id="selectedCells">None</p>
+        <h3>Hint Level</h3>
+        <p id="hintLevel">No hint</p>
+        <h3>Explanation</h3>
+        <p id="explanation">Solve and check to see explanation.</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
