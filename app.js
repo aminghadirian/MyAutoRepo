@@ -59,7 +59,7 @@ const METHODS = {
     puzzles: [
       sc("Row hidden pair", "Select the hidden pair cells for 2/7.", { r4c2: "2,5,7", r4c9: "2,5,7", r4c6: "1,2,7" }, ["r4c2", "r4c9"], "2 and 7 are restricted to these cells."),
       sc("Column hidden pair", "Select the hidden pair cells in column 3.", { r2c3: "1,5,9", r5c3: "1,6,9", r8c3: "2,6,7" }, ["r2c3", "r5c3"], "Digits 1 and 9 are hidden as a pair."),
-      sc("Box hidden pair", "Select the hidden pair in the center box.", { r4c4: "1,5,7", r5c5: "2,8", r6c6: "1,2,7" }, ["r4c4", "r6c6"], "Only those cells can hold 1 and 7." )
+      sc("Box hidden pair", "Select the hidden pair in the center box.", { r4c4: "1,5,7", r5c5: "2,8", r6c6: "1,2,7" }, ["r4c4", "r6c6"], "Only those cells can hold 1 and 7.")
     ]
   },
   xWing: {
@@ -89,13 +89,13 @@ const METHODS = {
     puzzles: [
       sc("Swordfish #1", "Select the 6 base cells.", { r2c2: "2,4,7", r2c7: "3,4,8", r5c2: "1,4,5", r5c7: "4,5,9", r8c2: "2,4,8", r8c7: "2,4,6" }, ["r2c2", "r2c7", "r5c2", "r5c7", "r8c2", "r8c7"], "Three rows share the same candidate columns."),
       sc("Swordfish #2", "Select the 6 base cells for candidate 6.", { r1c3: "4,6", r1c8: "1,6", r4c3: "1,6", r4c8: "4,6,8", r7c3: "3,6", r7c8: "1,6" }, ["r1c3", "r1c8", "r4c3", "r4c8", "r7c3", "r7c8"], "Candidate lines up across three rows."),
-      sc("Swordfish #3", "Select the 6 fish base cells.", { r2c1: "1,4,9", r2c5: "6,8", r5c1: "1,2,9", r5c5: "2,8", r8c1: "2,3,9", r8c5: "5,8" }, ["r2c1", "r2c5", "r5c1", "r5c5", "r8c1", "r8c5"], "Another 3-row fish arrangement." )
+      sc("Swordfish #3", "Select the 6 fish base cells.", { r2c1: "1,4,9", r2c5: "6,8", r5c1: "1,2,9", r5c5: "2,8", r8c1: "2,3,9", r8c5: "5,8" }, ["r2c1", "r2c5", "r5c1", "r5c5", "r8c1", "r8c5"], "Another 3-row fish arrangement.")
     ]
   }
 };
 
 const PROGRESS_KEY = "sudoku-method-3examples-v1";
-const SESSION_KEY = "sudoku-method-session-v1";
+const SESSION_KEY = "sudoku-method-session-v2";
 
 const methodSelect = document.getElementById("methodSelect");
 const methodTheory = document.getElementById("methodTheory");
@@ -111,15 +111,34 @@ const feedbackEl = document.getElementById("feedback");
 const selectedCellsEl = document.getElementById("selectedCells");
 const hintLevelEl = document.getElementById("hintLevel");
 const explanationEl = document.getElementById("explanation");
+const noteModeBtn = document.getElementById("noteModeBtn");
+const clearCellBtn = document.getElementById("clearCellBtn");
+const digitPad = document.getElementById("digitPad");
 
 let currentMethod = METHOD_ORDER[0];
 let currentPuzzle = 0;
 let selected = new Set();
 let hintLevel = 0;
 let progress = loadProgress();
+let noteMode = false;
+let activeCellKey = null;
+let highlightedDigit = null;
+const userMarks = {};
 
 function sc(name, instruction, candidates, targets, explanation) {
   return { name, instruction, board: BOARD, candidates, targets, explanation };
+}
+
+function scenarioId() { return `${currentMethod}-${currentPuzzle}`; }
+function marksForScenario() {
+  const id = scenarioId();
+  if (!userMarks[id]) userMarks[id] = {};
+  return userMarks[id];
+}
+
+function parseCellKey(key) {
+  const m = key.match(/^r(\d+)c(\d+)$/);
+  return { row: Number(m[1]) - 1, col: Number(m[2]) - 1 };
 }
 
 function loadProgress() {
@@ -135,33 +154,28 @@ function loadProgress() {
   }
 }
 
-function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); }
-function currentScenario() { return METHODS[currentMethod].puzzles[currentPuzzle]; }
-function methodDone(method) { return progress[method].length >= 3; }
-function methodUnlocked(method) {
-  return METHOD_ORDER.includes(method);
-}
-
-
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!METHOD_ORDER.includes(parsed.currentMethod)) return null;
-    const maxIndex = METHODS[parsed.currentMethod].puzzles.length - 1;
     return {
       currentMethod: parsed.currentMethod,
-      currentPuzzle: Math.min(Math.max(Number(parsed.currentPuzzle) || 0, 0), maxIndex)
+      currentPuzzle: Math.min(Math.max(Number(parsed.currentPuzzle) || 0, 0), 2)
     };
   } catch {
     return null;
   }
 }
 
+function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); }
 function saveSession() {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ currentMethod, currentPuzzle }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ currentMethod, currentPuzzle, noteMode }));
 }
+
+function currentScenario() { return METHODS[currentMethod].puzzles[currentPuzzle]; }
+function methodDone(method) { return progress[method].length >= 3; }
 
 function init() {
   METHOD_ORDER.forEach((method) => {
@@ -170,6 +184,23 @@ function init() {
     o.textContent = `${METHODS[method].level}: ${METHODS[method].label}`;
     methodSelect.append(o);
   });
+
+  for (let d = 1; d <= 9; d += 1) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "secondary";
+    btn.textContent = String(d);
+    btn.addEventListener("click", () => applyDigit(String(d)));
+    digitPad.append(btn);
+  }
+
+  noteModeBtn.addEventListener("click", () => {
+    noteMode = !noteMode;
+    noteModeBtn.textContent = noteMode ? "Pencil On" : "Pencil Off";
+    saveSession();
+  });
+
+  clearCellBtn.addEventListener("click", clearActiveCell);
 
   methodSelect.addEventListener("change", () => {
     currentMethod = methodSelect.value;
@@ -183,10 +214,10 @@ function init() {
   document.getElementById("hintBtn").addEventListener("click", onHint);
   document.getElementById("nextBtn").addEventListener("click", onNext);
 
-  const savedSession = loadSession();
-  if (savedSession) {
-    currentMethod = savedSession.currentMethod;
-    currentPuzzle = savedSession.currentPuzzle;
+  const saved = loadSession();
+  if (saved) {
+    currentMethod = saved.currentMethod;
+    currentPuzzle = saved.currentPuzzle;
   }
 
   syncMethodSelect();
@@ -219,14 +250,18 @@ function renderCurriculum() {
     li.textContent = `${METHODS[method].level}: ${METHODS[method].label} — ${progress[method].length}/3`;
     li.classList.toggle("active", method === currentMethod);
     li.classList.toggle("done", methodDone(method));
-    li.classList.toggle("locked", false);
     curriculumList.append(li);
   });
+}
+
+function toggleHighlightDigit(digit) {
+  highlightedDigit = highlightedDigit === digit ? null : digit;
 }
 
 function renderBoard() {
   const scn = currentScenario();
   const relevant = new Set([...Object.keys(scn.candidates), ...scn.targets]);
+  const marks = marksForScenario();
   boardEl.innerHTML = "";
 
   scn.board.split("").forEach((v, idx) => {
@@ -241,12 +276,37 @@ function renderBoard() {
     if (v !== "0") {
       cell.classList.add("given");
       cell.textContent = v;
-      cell.disabled = true;
+      if (highlightedDigit === v) cell.classList.add("same-digit");
+      cell.addEventListener("click", () => {
+        toggleHighlightDigit(v);
+        renderBoard();
+      });
     } else {
+      const mark = marks[key] || { value: "", notes: [] };
+      const hasValue = Boolean(mark.value);
+
       if (hintLevel >= 1 && !relevant.has(key)) cell.classList.add("irrelevant");
       if (selected.has(key)) cell.classList.add("selected");
+      if (activeCellKey === key) cell.classList.add("active");
       if (hintLevel >= 3 && scn.targets[0] === key) cell.classList.add("target");
-      cell.addEventListener("click", () => toggleCell(key));
+      if (hasValue && highlightedDigit === mark.value) cell.classList.add("same-digit");
+
+      if (hasValue) {
+        cell.textContent = mark.value;
+      } else if (mark.notes.length) {
+        const span = document.createElement("span");
+        span.className = "notes";
+        span.textContent = mark.notes.join(" ");
+        cell.append(span);
+      }
+
+      cell.addEventListener("click", () => {
+        activeCellKey = key;
+        if (selected.has(key)) selected.delete(key); else selected.add(key);
+        if (hasValue) toggleHighlightDigit(mark.value);
+        selectedCellsEl.textContent = [...selected].sort().join(", ") || "None";
+        renderBoard();
+      });
     }
 
     boardEl.append(cell);
@@ -262,15 +322,39 @@ function render() {
   instructionEl.textContent = scn.instruction;
   selectedCellsEl.textContent = [...selected].sort().join(", ") || "None";
   hintLevelEl.textContent = hintLevel === 0 ? "No hint" : `Hint ${hintLevel}`;
+  noteModeBtn.textContent = noteMode ? "Pencil On" : "Pencil Off";
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   renderBoard();
   renderCurriculum();
 }
 
-function toggleCell(key) {
-  if (selected.has(key)) selected.delete(key); else selected.add(key);
-  selectedCellsEl.textContent = [...selected].sort().join(", ") || "None";
+function applyDigit(digit) {
+  if (!activeCellKey) return;
+  const { row, col } = parseCellKey(activeCellKey);
+  if (currentScenario().board[row * 9 + col] !== "0") return;
+
+  const marks = marksForScenario();
+  if (!marks[activeCellKey]) marks[activeCellKey] = { value: "", notes: [] };
+
+  if (noteMode) {
+    const set = new Set(marks[activeCellKey].notes);
+    if (set.has(digit)) set.delete(digit); else set.add(digit);
+    marks[activeCellKey].notes = [...set].sort();
+    marks[activeCellKey].value = "";
+  } else {
+    marks[activeCellKey].value = digit;
+    marks[activeCellKey].notes = [];
+    highlightedDigit = digit;
+  }
+
+  renderBoard();
+}
+
+function clearActiveCell() {
+  if (!activeCellKey) return;
+  const marks = marksForScenario();
+  marks[activeCellKey] = { value: "", notes: [] };
   renderBoard();
 }
 
@@ -296,7 +380,6 @@ function checkSelection() {
   feedbackEl.className = "feedback ok";
   explanationEl.textContent = scn.explanation;
   renderBoard();
-  syncMethodSelect();
   renderCurriculum();
 }
 
@@ -313,7 +396,12 @@ function onHint() {
   renderBoard();
 }
 
-function resetRound() { selected = new Set(); hintLevel = 0; }
+function resetRound() {
+  selected = new Set();
+  hintLevel = 0;
+  activeCellKey = null;
+  highlightedDigit = null;
+}
 
 function onNext() {
   currentPuzzle = (currentPuzzle + 1) % 3;
