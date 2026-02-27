@@ -95,6 +95,7 @@ const METHODS = {
 };
 
 const PROGRESS_KEY = "sudoku-method-3examples-v1";
+const SESSION_KEY = "sudoku-method-session-v1";
 
 const methodSelect = document.getElementById("methodSelect");
 const methodTheory = document.getElementById("methodTheory");
@@ -138,9 +139,28 @@ function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify(prog
 function currentScenario() { return METHODS[currentMethod].puzzles[currentPuzzle]; }
 function methodDone(method) { return progress[method].length >= 3; }
 function methodUnlocked(method) {
-  const i = METHOD_ORDER.indexOf(method);
-  if (i <= 0) return true;
-  return methodDone(METHOD_ORDER[i - 1]);
+  return METHOD_ORDER.includes(method);
+}
+
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!METHOD_ORDER.includes(parsed.currentMethod)) return null;
+    const maxIndex = METHODS[parsed.currentMethod].puzzles.length - 1;
+    return {
+      currentMethod: parsed.currentMethod,
+      currentPuzzle: Math.min(Math.max(Number(parsed.currentPuzzle) || 0, 0), maxIndex)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveSession() {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ currentMethod, currentPuzzle }));
 }
 
 function init() {
@@ -152,22 +172,22 @@ function init() {
   });
 
   methodSelect.addEventListener("change", () => {
-    const requested = methodSelect.value;
-    if (!methodUnlocked(requested)) {
-      feedbackEl.textContent = `Finish ${METHODS[METHOD_ORDER[METHOD_ORDER.indexOf(requested)-1]].label} first.`;
-      feedbackEl.className = "feedback bad";
-      syncMethodSelect();
-      return;
-    }
-    currentMethod = requested;
+    currentMethod = methodSelect.value;
     currentPuzzle = 0;
     resetRound();
+    saveSession();
     render();
   });
 
   document.getElementById("checkBtn").addEventListener("click", checkSelection);
   document.getElementById("hintBtn").addEventListener("click", onHint);
   document.getElementById("nextBtn").addEventListener("click", onNext);
+
+  const savedSession = loadSession();
+  if (savedSession) {
+    currentMethod = savedSession.currentMethod;
+    currentPuzzle = savedSession.currentPuzzle;
+  }
 
   syncMethodSelect();
   render();
@@ -176,11 +196,8 @@ function init() {
 function syncMethodSelect() {
   methodSelect.value = currentMethod;
   [...methodSelect.options].forEach((o) => {
-    const unlocked = methodUnlocked(o.value);
-    o.disabled = !unlocked;
-    o.textContent = unlocked
-      ? `${METHODS[o.value].level}: ${METHODS[o.value].label}`
-      : `${METHODS[o.value].level}: ${METHODS[o.value].label} (locked)`;
+    o.disabled = false;
+    o.textContent = `${METHODS[o.value].level}: ${METHODS[o.value].label}`;
   });
 }
 
@@ -202,7 +219,7 @@ function renderCurriculum() {
     li.textContent = `${METHODS[method].level}: ${METHODS[method].label} — ${progress[method].length}/3`;
     li.classList.toggle("active", method === currentMethod);
     li.classList.toggle("done", methodDone(method));
-    li.classList.toggle("locked", !methodUnlocked(method));
+    li.classList.toggle("locked", false);
     curriculumList.append(li);
   });
 }
@@ -237,6 +254,7 @@ function renderBoard() {
 }
 
 function render() {
+  saveSession();
   const scn = currentScenario();
   methodTheory.textContent = METHODS[currentMethod].theory;
   scenarioTitle.textContent = `${METHODS[currentMethod].label} • ${scn.name}`;
@@ -300,8 +318,8 @@ function resetRound() { selected = new Set(); hintLevel = 0; }
 function onNext() {
   currentPuzzle = (currentPuzzle + 1) % 3;
   resetRound();
+  saveSession();
   render();
 }
 
 init();
-
