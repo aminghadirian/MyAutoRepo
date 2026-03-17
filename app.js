@@ -1,153 +1,101 @@
-const BOARD = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
+// app.js — Sudoku Technique Trainer: application logic
+// ES modules are always in strict mode — no "use strict" directive needed.
 
-const METHOD_ORDER = [
-  "nakedSingle",
-  "hiddenSingle",
-  "lockedCandidates",
-  "nakedPair",
-  "hiddenPair",
-  "xWing",
-  "xyWing",
-  "swordfish"
-];
+import {
+  METHOD_ORDER, METHODS,
+  PROGRESS_KEY, SESSION_KEY, MARKS_KEY, THEME_KEY,
+  parseCellKey,
+} from "./data.js";
 
-const METHODS = {
-  nakedSingle: {
-    label: "Naked Single",
-    level: "Foundation",
-    theory: "A naked single is a cell with only one possible digit.",
-    puzzles: [
-      sc("Example 1", "Select the naked single.", { r1c3: "4", r1c4: "2,6" }, ["r1c3"], "r1c3 is forced to 4."),
-      sc("Example 2", "Select the naked single.", { r2c2: "7", r2c3: "2,7" }, ["r2c2"], "r2c2 has one candidate."),
-      sc("Example 3", "Select the naked single.", { r8c1: "2", r8c3: "2,6" }, ["r8c1"], "r8c1 is immediately solved.")
-    ]
-  },
-  hiddenSingle: {
-    label: "Hidden Single",
-    level: "Foundation",
-    theory: "A hidden single is the only place for a digit in a unit.",
-    puzzles: [
-      sc("Row hidden single", "Select the hidden single for 9.", { r4c2: "2,5,7", r4c4: "5,7,9", r4c6: "1,2,7" }, ["r4c4"], "Only r4c4 can take 9."),
-      sc("Column hidden single", "Select the hidden single for 1 in column 2.", { r1c2: "3,5", r2c2: "3,4", r5c2: "1,4,9" }, ["r5c2"], "1 appears only at r5c2 in the column."),
-      sc("Box hidden single", "Select the hidden single in box 1.", { r1c1: "1,3,5", r1c2: "3,5", r2c1: "1,4,9" }, ["r2c1"], "In this box, only r2c1 can be 9.")
-    ]
-  },
-  lockedCandidates: {
-    label: "Locked Candidates",
-    level: "Beginner",
-    theory: "If a candidate in a box is locked to one row/column, eliminate it outside the box.",
-    puzzles: [
-      sc("Pointing pair", "Select the two cells that lock digit 6.", { r1c4: "2,6", r1c6: "2,4,6,8", r2c4: "2,3,4" }, ["r1c4", "r1c6"], "6 is locked in row 1 for that box."),
-      sc("Pointing triple", "Select the three locked cells in row 3.", { r3c4: "2,3", r3c5: "3,6", r3c6: "2,4,6" }, ["r3c4", "r3c5", "r3c6"], "Candidate is confined to one row inside the box."),
-      sc("Claiming", "Select the two cells showing a claiming setup.", { r4c1: "2,8", r5c1: "1,8", r6c1: "3,9" }, ["r4c1", "r5c1"], "Candidate in line is claimed by a single box.")
-    ]
-  },
-  nakedPair: {
-    label: "Naked Pair",
-    level: "Beginner",
-    theory: "Two cells sharing the same two candidates form a naked pair.",
-    puzzles: [
-      sc("Row pair", "Select the naked pair (3,6).", { r7c3: "3,6", r7c6: "3,6", r7c1: "1,3,6" }, ["r7c3", "r7c6"], "These two cells lock 3/6."),
-      sc("Column pair", "Select the naked pair (1,7).", { r2c8: "1,7", r5c8: "1,7", r8c8: "2,7" }, ["r2c8", "r5c8"], "Column pair enables eliminations."),
-      sc("Box pair", "Select the naked pair in this box.", { r1c7: "2,9", r1c8: "2,9", r2c9: "2,4,9" }, ["r1c7", "r1c8"], "Exact two-digit match forms a pair.")
-    ]
-  },
-  hiddenPair: {
-    label: "Hidden Pair",
-    level: "Intermediate",
-    theory: "Two digits that only fit in two cells create a hidden pair.",
-    puzzles: [
-      sc("Row hidden pair", "Select the hidden pair cells for 2/7.", { r4c2: "2,5,7", r4c9: "2,5,7", r4c6: "1,2,7" }, ["r4c2", "r4c9"], "2 and 7 are restricted to these cells."),
-      sc("Column hidden pair", "Select the hidden pair cells in column 3.", { r2c3: "1,5,9", r5c3: "1,6,9", r8c3: "2,6,7" }, ["r2c3", "r5c3"], "Digits 1 and 9 are hidden as a pair."),
-      sc("Box hidden pair", "Select the hidden pair in the center box.", { r4c4: "1,5,7", r5c5: "2,8", r6c6: "1,2,7" }, ["r4c4", "r6c6"], "Only those cells can hold 1 and 7.")
-    ]
-  },
-  xWing: {
-    label: "X-Wing",
-    level: "Intermediate",
-    theory: "Two rows/columns with matching candidate positions form an X-Wing.",
-    puzzles: [
-      sc("X-Wing #1", "Select the four X-Wing corners for 6.", { r2c3: "6,7", r2c8: "4,6", r7c3: "3,6", r7c8: "1,6" }, ["r2c3", "r2c8", "r7c3", "r7c8"], "Rows 2 and 7 align in columns 3 and 8."),
-      sc("X-Wing #2", "Select the four corners for candidate 4.", { r2c2: "2,4,7", r2c7: "3,4,8", r8c2: "2,4,8", r8c7: "2,4,6" }, ["r2c2", "r2c7", "r8c2", "r8c7"], "Matching row positions create the wing."),
-      sc("X-Wing #3", "Select the X-Wing corners in columns 2 and 8.", { r1c2: "1,4,6", r1c8: "1,4", r5c2: "1,4,5", r5c8: "2,6,9" }, ["r1c2", "r1c8", "r5c2", "r5c8"], "Two-row two-column cycle is formed.")
-    ]
-  },
-  xyWing: {
-    label: "XY-Wing",
-    level: "Advanced",
-    theory: "Pivot (X,Y) with wings (X,Z) and (Y,Z) creates Z-elimination.",
-    puzzles: [
-      sc("XY-Wing #1", "Select pivot + two wings.", { r5c5: "2,8", r5c8: "2,6", r2c5: "6,8" }, ["r5c5", "r5c8", "r2c5"], "Classic XY-Wing structure."),
-      sc("XY-Wing #2", "Select pivot + two wings.", { r4c4: "1,7", r4c6: "1,5", r6c4: "5,7" }, ["r4c4", "r4c6", "r6c4"], "Pivot shares one candidate with each wing."),
-      sc("XY-Wing #3", "Select pivot + two wings.", { r2c2: "4,9", r2c5: "4,6", r5c2: "6,9" }, ["r2c2", "r2c5", "r5c2"], "Wings connect through the pivot.")
-    ]
-  },
-  swordfish: {
-    label: "Swordfish",
-    level: "Advanced",
-    theory: "A 3-row/3-column fish pattern that extends X-Wing logic.",
-    puzzles: [
-      sc("Swordfish #1", "Select the 6 base cells.", { r2c2: "2,4,7", r2c7: "3,4,8", r5c2: "1,4,5", r5c7: "4,5,9", r8c2: "2,4,8", r8c7: "2,4,6" }, ["r2c2", "r2c7", "r5c2", "r5c7", "r8c2", "r8c7"], "Three rows share the same candidate columns."),
-      sc("Swordfish #2", "Select the 6 base cells for candidate 6.", { r1c3: "4,6", r1c8: "1,6", r4c3: "1,6", r4c8: "4,6,8", r7c3: "3,6", r7c8: "1,6" }, ["r1c3", "r1c8", "r4c3", "r4c8", "r7c3", "r7c8"], "Candidate lines up across three rows."),
-      sc("Swordfish #3", "Select the 6 fish base cells.", { r2c1: "1,4,9", r2c5: "6,8", r5c1: "1,2,9", r5c5: "2,8", r8c1: "2,3,9", r8c5: "5,8" }, ["r2c1", "r2c5", "r5c1", "r5c5", "r8c1", "r8c5"], "Another 3-row fish arrangement.")
-    ]
-  }
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const methodSelect      = $("methodSelect");
+const methodTheory      = $("methodTheory");
+const curriculumPreview = $("curriculumPreview");
+const curriculumList    = $("curriculumList");
+const masteryPill       = $("masteryPill");
+const masteryFill       = $("masteryFill");
+const boardEl           = $("board");
+const scenarioTitle     = $("scenarioTitle");
+const progressPill      = $("progressPill");
+const instructionEl     = $("instruction");
+const feedbackEl        = $("feedback");
+const selectedCellsEl   = $("selectedCells");
+const hintLevelEl       = $("hintLevel");
+const explanationEl     = $("explanation");
+const noteModeBtn       = $("noteModeBtn");
+const clearCellBtn      = $("clearCellBtn");
+const digitPad          = $("digitPad");
+const timerEl           = $("timerDisplay");
+const darkModeBtn       = $("darkModeBtn");
+const resetBtn          = $("resetBtn");
+const undoBtn           = $("undoBtn");
+const redoBtn           = $("redoBtn");
+const completionOverlay = $("completionOverlay");
+
+// ── Centralised state ─────────────────────────────────────────────────────────
+const state = {
+  currentMethod:    METHOD_ORDER[0],
+  currentPuzzle:    0,
+  selected:         new Set(),
+  hintLevel:        0,
+  noteMode:         false,
+  activeCellKey:    null,
+  highlightedDigit: null,
+  progress:         loadProgress(),
+  darkMode:         localStorage.getItem(THEME_KEY) === "dark",
 };
 
-const PROGRESS_KEY = "sudoku-method-3examples-v1";
-const SESSION_KEY = "sudoku-method-session-v2";
+// Persisted pencil marks — { [scenarioId]: { [cellKey]: { value, notes[] } } }
+const userMarks = loadMarks();
 
-const methodSelect = document.getElementById("methodSelect");
-const methodTheory = document.getElementById("methodTheory");
-const curriculumPreview = document.getElementById("curriculumPreview");
-const curriculumList = document.getElementById("curriculumList");
-const masteryPill = document.getElementById("masteryPill");
-const masteryFill = document.getElementById("masteryFill");
-const boardEl = document.getElementById("board");
-const scenarioTitle = document.getElementById("scenarioTitle");
-const progressPill = document.getElementById("progressPill");
-const instructionEl = document.getElementById("instruction");
-const feedbackEl = document.getElementById("feedback");
-const selectedCellsEl = document.getElementById("selectedCells");
-const hintLevelEl = document.getElementById("hintLevel");
-const explanationEl = document.getElementById("explanation");
-const noteModeBtn = document.getElementById("noteModeBtn");
-const clearCellBtn = document.getElementById("clearCellBtn");
-const digitPad = document.getElementById("digitPad");
+// Undo / redo stacks per scenario
+const undoStack = {};
+const redoStack = {};
 
-let currentMethod = METHOD_ORDER[0];
-let currentPuzzle = 0;
-let selected = new Set();
-let hintLevel = 0;
-let progress = loadProgress();
-let noteMode = false;
-let activeCellKey = null;
-let highlightedDigit = null;
-const userMarks = {};
+// ── Timer state ───────────────────────────────────────────────────────────────
+let timerInterval  = null;
+let puzzleStartTime = null;
 
-function sc(name, instruction, candidates, targets, explanation) {
-  return { name, instruction, board: BOARD, candidates, targets, explanation };
+// ── Pure helpers ──────────────────────────────────────────────────────────────
+function scenarioId() {
+  return `${state.currentMethod}-${state.currentPuzzle}`;
 }
 
-function scenarioId() { return `${currentMethod}-${currentPuzzle}`; }
+function currentScenario() {
+  return METHODS[state.currentMethod].puzzles[state.currentPuzzle];
+}
+
+function methodDone(method) {
+  return state.progress[method].length >= 3;
+}
+
+function allDone() {
+  return METHOD_ORDER.every(methodDone);
+}
+
 function marksForScenario() {
   const id = scenarioId();
   if (!userMarks[id]) userMarks[id] = {};
   return userMarks[id];
 }
 
-function parseCellKey(key) {
-  const m = key.match(/^r(\d+)c(\d+)$/);
-  return { row: Number(m[1]) - 1, col: Number(m[2]) - 1 };
-}
-
+// ── Persistence ───────────────────────────────────────────────────────────────
 function loadProgress() {
   const fallback = Object.fromEntries(METHOD_ORDER.map((m) => [m, []]));
   try {
     const raw = localStorage.getItem(PROGRESS_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
-    METHOD_ORDER.forEach((m) => { if (!Array.isArray(parsed[m])) parsed[m] = []; });
+    if (typeof parsed !== "object" || parsed === null) return fallback;
+    METHOD_ORDER.forEach((m) => {
+      if (!Array.isArray(parsed[m])) {
+        parsed[m] = [];
+      } else {
+        // Reject out-of-range or non-numeric entries
+        parsed[m] = parsed[m].filter((v) => typeof v === "number" && v >= 0 && v <= 2);
+      }
+    });
     return parsed;
   } catch {
     return fallback;
@@ -159,259 +107,480 @@ function loadSession() {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
     if (!METHOD_ORDER.includes(parsed.currentMethod)) return null;
+    const maxPuzzle = METHODS[parsed.currentMethod].puzzles.length - 1;
     return {
       currentMethod: parsed.currentMethod,
-      currentPuzzle: Math.min(Math.max(Number(parsed.currentPuzzle) || 0, 0), 2)
+      currentPuzzle: Math.min(Math.max(Number(parsed.currentPuzzle) || 0, 0), maxPuzzle),
+      noteMode:      Boolean(parsed.noteMode),
     };
   } catch {
     return null;
   }
 }
 
-function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); }
-function saveSession() {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ currentMethod, currentPuzzle, noteMode }));
-}
-
-function currentScenario() { return METHODS[currentMethod].puzzles[currentPuzzle]; }
-function methodDone(method) { return progress[method].length >= 3; }
-
-function init() {
-  METHOD_ORDER.forEach((method) => {
-    const o = document.createElement("option");
-    o.value = method;
-    o.textContent = `${METHODS[method].level}: ${METHODS[method].label}`;
-    methodSelect.append(o);
-  });
-
-  for (let d = 1; d <= 9; d += 1) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "secondary";
-    btn.textContent = String(d);
-    btn.addEventListener("click", () => applyDigit(String(d)));
-    digitPad.append(btn);
+function loadMarks() {
+  try {
+    const raw = localStorage.getItem(MARKS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (typeof parsed === "object" && parsed !== null) ? parsed : {};
+  } catch {
+    return {};
   }
-
-  noteModeBtn.addEventListener("click", () => {
-    noteMode = !noteMode;
-    noteModeBtn.textContent = noteMode ? "Pencil On" : "Pencil Off";
-    saveSession();
-  });
-
-  clearCellBtn.addEventListener("click", clearActiveCell);
-
-  methodSelect.addEventListener("change", () => {
-    currentMethod = methodSelect.value;
-    currentPuzzle = 0;
-    resetRound();
-    saveSession();
-    render();
-  });
-
-  document.getElementById("checkBtn").addEventListener("click", checkSelection);
-  document.getElementById("hintBtn").addEventListener("click", onHint);
-  document.getElementById("nextBtn").addEventListener("click", onNext);
-
-  const saved = loadSession();
-  if (saved) {
-    currentMethod = saved.currentMethod;
-    currentPuzzle = saved.currentPuzzle;
-  }
-
-  syncMethodSelect();
-  render();
 }
 
-function syncMethodSelect() {
-  methodSelect.value = currentMethod;
-  [...methodSelect.options].forEach((o) => {
-    o.disabled = false;
-    o.textContent = `${METHODS[o.value].level}: ${METHODS[o.value].label}`;
-  });
+function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify(state.progress)); }
+function saveSession()  {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    currentMethod: state.currentMethod,
+    currentPuzzle: state.currentPuzzle,
+    noteMode:      state.noteMode,
+  }));
+}
+function saveMarks()    { localStorage.setItem(MARKS_KEY, JSON.stringify(userMarks)); }
+function saveTheme()    { localStorage.setItem(THEME_KEY, state.darkMode ? "dark" : "light"); }
+
+// ── Undo / Redo ───────────────────────────────────────────────────────────────
+function snapshotMarks() {
+  return JSON.parse(JSON.stringify(userMarks[scenarioId()] || {}));
 }
 
+function pushUndo() {
+  const id = scenarioId();
+  if (!undoStack[id]) undoStack[id] = [];
+  if (!redoStack[id]) redoStack[id] = [];
+  undoStack[id].push(snapshotMarks());
+  redoStack[id] = []; // new action clears redo history
+}
+
+function undo() {
+  const id = scenarioId();
+  if (!undoStack[id] || !undoStack[id].length) return;
+  if (!redoStack[id]) redoStack[id] = [];
+  redoStack[id].push(snapshotMarks());
+  userMarks[id] = undoStack[id].pop();
+  saveMarks();
+  renderBoard();
+  updateUndoRedoBtns();
+}
+
+function redo() {
+  const id = scenarioId();
+  if (!redoStack[id] || !redoStack[id].length) return;
+  if (!undoStack[id]) undoStack[id] = [];
+  undoStack[id].push(snapshotMarks());
+  userMarks[id] = redoStack[id].pop();
+  saveMarks();
+  renderBoard();
+  updateUndoRedoBtns();
+}
+
+function updateUndoRedoBtns() {
+  const id = scenarioId();
+  undoBtn.disabled = !(undoStack[id] && undoStack[id].length);
+  redoBtn.disabled = !(redoStack[id] && redoStack[id].length);
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────────
+function startTimer() {
+  stopTimer();
+  puzzleStartTime = Date.now();
+  timerInterval = setInterval(updateTimerDisplay, 1000);
+  updateTimerDisplay();
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerDisplay() {
+  if (!puzzleStartTime) return;
+  const elapsed = Math.floor((Date.now() - puzzleStartTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const s = String(elapsed % 60).padStart(2, "0");
+  timerEl.textContent = `${m}:${s}`;
+}
+
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", state.darkMode ? "dark" : "light");
+  darkModeBtn.textContent = state.darkMode ? "Light Mode" : "Dark Mode";
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
 function collapsedPreview() {
-  const i = METHOD_ORDER.indexOf(currentMethod);
-  const parts = [METHOD_ORDER[i], METHOD_ORDER[i + 1], METHOD_ORDER[i + 2]].filter(Boolean).map((k) => METHODS[k].label);
+  const i = METHOD_ORDER.indexOf(state.currentMethod);
+  const parts = [METHOD_ORDER[i], METHOD_ORDER[i + 1], METHOD_ORDER[i + 2]]
+    .filter(Boolean)
+    .map((k) => METHODS[k].label);
   return `${parts.join(" · ")} ${i + 3 < METHOD_ORDER.length ? "..." : ""}`.trim();
 }
 
 function renderCurriculum() {
   const doneCount = METHOD_ORDER.filter(methodDone).length;
   masteryPill.textContent = `${Math.round((doneCount / METHOD_ORDER.length) * 100)}%`;
-  masteryFill.style.width = `${(doneCount / METHOD_ORDER.length) * 100}%`;
+  masteryFill.style.width  = `${(doneCount / METHOD_ORDER.length) * 100}%`;
   curriculumPreview.textContent = collapsedPreview();
-
   curriculumList.innerHTML = "";
   METHOD_ORDER.forEach((method) => {
     const li = document.createElement("li");
-    li.textContent = `${METHODS[method].level}: ${METHODS[method].label} — ${progress[method].length}/3`;
-    li.classList.toggle("active", method === currentMethod);
-    li.classList.toggle("done", methodDone(method));
+    li.textContent = `${METHODS[method].level}: ${METHODS[method].label} — ${state.progress[method].length}/3`;
+    li.classList.toggle("active", method === state.currentMethod);
+    li.classList.toggle("done",   methodDone(method));
     curriculumList.append(li);
   });
 }
 
-function toggleHighlightDigit(digit) {
-  highlightedDigit = highlightedDigit === digit ? null : digit;
+function renderDigitPad(boardStr) {
+  // Dim digit-pad buttons for digits that appear as givens in the current board.
+  const givenDigits = new Set(boardStr.split("").filter((v) => v !== "0"));
+  [...digitPad.children].forEach((btn) => {
+    btn.classList.toggle("digit-given", givenDigits.has(btn.textContent));
+  });
 }
 
 function renderBoard() {
-  const scn = currentScenario();
+  const scn      = currentScenario();
   const relevant = new Set([...Object.keys(scn.candidates), ...scn.targets]);
-  const marks = marksForScenario();
+  const marks    = marksForScenario();
   boardEl.innerHTML = "";
 
   scn.board.split("").forEach((v, idx) => {
-    const row = Math.floor(idx / 9);
-    const key = `r${row + 1}c${(idx % 9) + 1}`;
+    const row  = Math.floor(idx / 9);
+    const col  = idx % 9;
+    const key  = `r${row + 1}c${col + 1}`;
     const cell = document.createElement("button");
-    cell.className = "cell";
-    cell.dataset.key = key;
-    cell.dataset.row = String(row);
-    cell.type = "button";
+    cell.className    = "cell";
+    cell.dataset.key  = key;
+    cell.dataset.row  = String(row);
+    cell.type         = "button";
 
     if (v !== "0") {
+      // Given (pre-filled) cell
       cell.classList.add("given");
       cell.textContent = v;
-      if (highlightedDigit === v) cell.classList.add("same-digit");
+      cell.setAttribute("aria-label", `Row ${row + 1} column ${col + 1}, given ${v}`);
+      if (state.highlightedDigit === v) cell.classList.add("same-digit");
       cell.addEventListener("click", () => {
-        toggleHighlightDigit(v);
+        state.highlightedDigit = state.highlightedDigit === v ? null : v;
         renderBoard();
       });
     } else {
-      const mark = marks[key] || { value: "", notes: [] };
+      // Empty cell — user-interactive
+      const mark     = marks[key] || { value: "", notes: [] };
       const hasValue = Boolean(mark.value);
 
-      if (hintLevel >= 1 && !relevant.has(key)) cell.classList.add("irrelevant");
-      if (selected.has(key)) cell.classList.add("selected");
-      if (activeCellKey === key) cell.classList.add("active");
-      if (hintLevel >= 3 && scn.targets[0] === key) cell.classList.add("target");
-      if (hasValue && highlightedDigit === mark.value) cell.classList.add("same-digit");
+      if (state.hintLevel >= 1 && !relevant.has(key))         cell.classList.add("irrelevant");
+      if (state.selected.has(key))                             cell.classList.add("selected");
+      if (state.activeCellKey === key)                         cell.classList.add("active");
+      if (state.hintLevel >= 3 && scn.targets[0] === key)     cell.classList.add("target");
+      if (hasValue && state.highlightedDigit === mark.value)   cell.classList.add("same-digit");
+
+      // ARIA label
+      let ariaLabel = `Row ${row + 1} column ${col + 1}`;
+      if (hasValue)              ariaLabel += `, filled ${mark.value}`;
+      else if (mark.notes.length) ariaLabel += `, notes ${mark.notes.join(" ")}`;
+      else                        ariaLabel += ", empty";
+      if (state.selected.has(key)) ariaLabel += ", selected";
+      cell.setAttribute("aria-label", ariaLabel);
 
       if (hasValue) {
         cell.textContent = mark.value;
       } else if (mark.notes.length) {
         const span = document.createElement("span");
-        span.className = "notes";
+        span.className   = "notes";
         span.textContent = mark.notes.join(" ");
         cell.append(span);
-      } else if (hintLevel >= 2 && scn.candidates[key]) {
+      } else if (state.hintLevel >= 2 && scn.candidates[key]) {
         const span = document.createElement("span");
-        span.className = "notes hint-candidates";
+        span.className   = "notes hint-candidates";
         span.textContent = scn.candidates[key];
         cell.append(span);
       }
 
       cell.addEventListener("click", () => {
-        activeCellKey = key;
-        if (selected.has(key)) selected.delete(key); else selected.add(key);
-        if (hasValue) toggleHighlightDigit(mark.value);
-        selectedCellsEl.textContent = [...selected].sort().join(", ") || "None";
+        state.activeCellKey = key;
+        if (state.selected.has(key)) state.selected.delete(key); else state.selected.add(key);
+        if (hasValue) state.highlightedDigit = state.highlightedDigit === mark.value ? null : mark.value;
+        selectedCellsEl.textContent = [...state.selected].sort().join(", ") || "None";
         renderBoard();
       });
     }
 
     boardEl.append(cell);
   });
+
+  // Restore keyboard focus to the active cell without scrolling
+  if (state.activeCellKey) {
+    const activeEl = boardEl.querySelector(`[data-key="${state.activeCellKey}"]`);
+    if (activeEl && document.activeElement !== activeEl) {
+      activeEl.focus({ preventScroll: true });
+    }
+  }
+
+  updateUndoRedoBtns();
 }
 
 function render() {
   saveSession();
   const scn = currentScenario();
-  methodTheory.textContent = METHODS[currentMethod].theory;
-  scenarioTitle.textContent = `${METHODS[currentMethod].label} • ${scn.name}`;
-  progressPill.textContent = `${currentPuzzle + 1}/3`;
+  methodTheory.textContent  = METHODS[state.currentMethod].theory;
+  scenarioTitle.textContent = `${METHODS[state.currentMethod].label} • ${scn.name}`;
+  progressPill.textContent  = `${state.currentPuzzle + 1}/3`;
   instructionEl.textContent = scn.instruction;
-  selectedCellsEl.textContent = [...selected].sort().join(", ") || "None";
-  hintLevelEl.textContent = hintLevel === 0 ? "No hint" : `Hint ${hintLevel}`;
-  noteModeBtn.textContent = noteMode ? "Pencil On" : "Pencil Off";
-  feedbackEl.textContent = "";
-  feedbackEl.className = "feedback";
+  selectedCellsEl.textContent = [...state.selected].sort().join(", ") || "None";
+  hintLevelEl.textContent   = state.hintLevel === 0 ? "No hint" : `Hint ${state.hintLevel}`;
+  noteModeBtn.textContent   = state.noteMode ? "Pencil On" : "Pencil Off";
+  feedbackEl.textContent    = "";
+  feedbackEl.className      = "feedback";
+  explanationEl.textContent = "Solve and check to see explanation.";
   renderBoard();
   renderCurriculum();
+  renderDigitPad(scn.board);
 }
 
+// ── User actions ──────────────────────────────────────────────────────────────
 function applyDigit(digit) {
-  if (!activeCellKey) return;
-  const { row, col } = parseCellKey(activeCellKey);
+  if (!state.activeCellKey) return;
+  const { row, col } = parseCellKey(state.activeCellKey);
   if (currentScenario().board[row * 9 + col] !== "0") return;
 
+  pushUndo();
   const marks = marksForScenario();
-  if (!marks[activeCellKey]) marks[activeCellKey] = { value: "", notes: [] };
+  if (!marks[state.activeCellKey]) marks[state.activeCellKey] = { value: "", notes: [] };
 
-  if (noteMode) {
-    const set = new Set(marks[activeCellKey].notes);
+  if (state.noteMode) {
+    const set = new Set(marks[state.activeCellKey].notes);
     if (set.has(digit)) set.delete(digit); else set.add(digit);
-    marks[activeCellKey].notes = [...set].sort();
-    marks[activeCellKey].value = "";
+    marks[state.activeCellKey].notes = [...set].sort();
+    marks[state.activeCellKey].value = "";
   } else {
-    marks[activeCellKey].value = digit;
-    marks[activeCellKey].notes = [];
-    highlightedDigit = digit;
+    marks[state.activeCellKey].value = digit;
+    marks[state.activeCellKey].notes = [];
+    state.highlightedDigit = digit;
   }
 
+  saveMarks();
   renderBoard();
 }
 
 function clearActiveCell() {
-  if (!activeCellKey) return;
-  const marks = marksForScenario();
-  marks[activeCellKey] = { value: "", notes: [] };
+  if (!state.activeCellKey) return;
+  pushUndo();
+  marksForScenario()[state.activeCellKey] = { value: "", notes: [] };
+  saveMarks();
   renderBoard();
 }
 
 function checkSelection() {
   const scn = currentScenario();
-  const a = [...selected].sort();
-  const b = [...scn.targets].sort();
-  const ok = a.length === b.length && a.every((v, i) => v === b[i]);
+  const a   = [...state.selected].sort();
+  const b   = [...scn.targets].sort();
+  const ok  = a.length === b.length && a.every((v, i) => v === b[i]);
 
   if (!ok) {
     feedbackEl.textContent = "Not quite. Try another hint level.";
-    feedbackEl.className = "feedback bad";
+    feedbackEl.className   = "feedback bad";
     return;
   }
 
-  if (!progress[currentMethod].includes(currentPuzzle)) {
-    progress[currentMethod].push(currentPuzzle);
-    progress[currentMethod].sort((x, y) => x - y);
+  stopTimer();
+
+  if (!state.progress[state.currentMethod].includes(state.currentPuzzle)) {
+    state.progress[state.currentMethod].push(state.currentPuzzle);
+    state.progress[state.currentMethod].sort((x, y) => x - y);
     saveProgress();
   }
 
-  feedbackEl.textContent = "Correct!";
-  feedbackEl.className = "feedback ok";
+  feedbackEl.textContent    = "Correct!";
+  feedbackEl.className      = "feedback ok";
   explanationEl.textContent = scn.explanation;
   renderBoard();
   renderCurriculum();
+
+  if (allDone()) completionOverlay.hidden = false;
 }
 
 function onHint() {
-  hintLevel = Math.min(3, hintLevel + 1);
+  state.hintLevel = Math.min(3, state.hintLevel + 1);
   feedbackEl.textContent =
-    hintLevel === 1
+    state.hintLevel === 1
       ? "Hint 1: irrelevant cells turned gray."
-      : hintLevel === 2
+      : state.hintLevel === 2
         ? "Hint 2: scenario candidate notes are now shown on relevant cells."
         : "Hint 3: one key target is highlighted.";
-  feedbackEl.className = "feedback";
-  hintLevelEl.textContent = `Hint ${hintLevel}`;
+  feedbackEl.className    = "feedback";
+  hintLevelEl.textContent = `Hint ${state.hintLevel}`;
   renderBoard();
 }
 
 function resetRound() {
-  selected = new Set();
-  hintLevel = 0;
-  activeCellKey = null;
-  highlightedDigit = null;
+  state.selected        = new Set();
+  state.hintLevel       = 0;
+  state.activeCellKey   = null;
+  state.highlightedDigit = null;
 }
 
 function onNext() {
-  currentPuzzle = (currentPuzzle + 1) % 3;
+  state.currentPuzzle = (state.currentPuzzle + 1) % 3;
   resetRound();
   saveSession();
+  startTimer();
+  render();
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress? This cannot be undone.")) return;
+  localStorage.removeItem(PROGRESS_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(MARKS_KEY);
+  state.progress      = Object.fromEntries(METHOD_ORDER.map((m) => [m, []]));
+  state.currentMethod = METHOD_ORDER[0];
+  state.currentPuzzle = 0;
+  Object.keys(userMarks).forEach((k) => delete userMarks[k]);
+  Object.keys(undoStack).forEach((k) => delete undoStack[k]);
+  Object.keys(redoStack).forEach((k) => delete redoStack[k]);
+  completionOverlay.hidden = true;
+  resetRound();
+  syncMethodSelect();
+  startTimer();
+  render();
+}
+
+// ── Keyboard navigation ───────────────────────────────────────────────────────
+const ARROW_DIRS = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+
+function handleKeydown(e) {
+  const activeEl = document.activeElement;
+
+  // Arrow keys: move between cells
+  if (ARROW_DIRS[e.key] && activeEl && activeEl.classList.contains("cell")) {
+    e.preventDefault();
+    const key = activeEl.dataset.key;
+    if (!key) return;
+    const { row, col } = parseCellKey(key);
+    const [dr, dc]     = ARROW_DIRS[e.key];
+    const nr           = Math.min(8, Math.max(0, row + dr));
+    const nc           = Math.min(8, Math.max(0, col + dc));
+    const nextKey      = `r${nr + 1}c${nc + 1}`;
+    const nextEl       = boardEl.querySelector(`[data-key="${nextKey}"]`);
+    if (!nextEl) return;
+    nextEl.focus();
+    if (!nextEl.classList.contains("given")) {
+      state.activeCellKey = nextKey;
+      if (e.shiftKey) {
+        state.selected.add(nextKey);
+      } else {
+        state.selected = new Set([nextKey]);
+      }
+      selectedCellsEl.textContent = [...state.selected].sort().join(", ") || "None";
+      renderBoard();
+    }
+    return;
+  }
+
+  // Digit keys: fill active cell
+  if (/^[1-9]$/.test(e.key) && state.activeCellKey) {
+    applyDigit(e.key);
+    return;
+  }
+
+  // Backspace / Delete: clear active cell
+  if ((e.key === "Backspace" || e.key === "Delete") && state.activeCellKey) {
+    clearActiveCell();
+    return;
+  }
+
+  // Ctrl/Cmd+Z: undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y: redo
+  if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+    e.preventDefault();
+    redo();
+  }
+}
+
+// ── Initialisation ────────────────────────────────────────────────────────────
+function syncMethodSelect() {
+  methodSelect.value = state.currentMethod;
+  [...methodSelect.options].forEach((o) => {
+    o.textContent = `${METHODS[o.value].level}: ${METHODS[o.value].label}`;
+  });
+}
+
+function init() {
+  // Populate method selector
+  METHOD_ORDER.forEach((method) => {
+    const o       = document.createElement("option");
+    o.value       = method;
+    o.textContent = `${METHODS[method].level}: ${METHODS[method].label}`;
+    methodSelect.append(o);
+  });
+
+  // Populate digit pad
+  for (let d = 1; d <= 9; d++) {
+    const btn       = document.createElement("button");
+    btn.type        = "button";
+    btn.className   = "secondary";
+    btn.textContent = String(d);
+    btn.addEventListener("click", () => applyDigit(String(d)));
+    digitPad.append(btn);
+  }
+
+  // Wire controls
+  noteModeBtn.addEventListener("click", () => {
+    state.noteMode        = !state.noteMode;
+    noteModeBtn.textContent = state.noteMode ? "Pencil On" : "Pencil Off";
+    saveSession();
+  });
+
+  clearCellBtn.addEventListener("click", clearActiveCell);
+
+  methodSelect.addEventListener("change", () => {
+    state.currentMethod = methodSelect.value;
+    state.currentPuzzle = 0;
+    resetRound();
+    saveSession();
+    startTimer();
+    render();
+  });
+
+  $("checkBtn").addEventListener("click", checkSelection);
+  $("hintBtn").addEventListener("click", onHint);
+  $("nextBtn").addEventListener("click", onNext);
+
+  darkModeBtn.addEventListener("click", () => {
+    state.darkMode = !state.darkMode;
+    applyTheme();
+    saveTheme();
+  });
+
+  resetBtn.addEventListener("click", resetProgress);
+  undoBtn.addEventListener("click",  undo);
+  redoBtn.addEventListener("click",  redo);
+
+  $("closeCompletionBtn").addEventListener("click", () => {
+    completionOverlay.hidden = true;
+  });
+
+  document.addEventListener("keydown", handleKeydown);
+
+  // Restore last session
+  const saved = loadSession();
+  if (saved) {
+    state.currentMethod = saved.currentMethod;
+    state.currentPuzzle = saved.currentPuzzle;
+    state.noteMode      = saved.noteMode;
+  }
+
+  applyTheme();
+  syncMethodSelect();
+  startTimer();
   render();
 }
 

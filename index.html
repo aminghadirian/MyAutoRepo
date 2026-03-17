@@ -9,8 +9,13 @@
   <body>
     <main class="app">
       <header>
-        <h1>Sudoku Technique Trainer</h1>
-        <p class="subtitle">Train one method pattern at a time.</p>
+        <div class="header-row">
+          <div>
+            <h1>Sudoku Technique Trainer</h1>
+            <p class="subtitle">Train one method pattern at a time.</p>
+          </div>
+          <button id="darkModeBtn" class="secondary small" type="button">Dark Mode</button>
+        </div>
       </header>
 
       <section class="panel">
@@ -33,8 +38,9 @@
         <div class="board-header">
           <h2 id="scenarioTitle">Puzzle</h2>
           <span id="progressPill" class="pill">1/3</span>
+          <span id="timerDisplay" class="timer">00:00</span>
         </div>
-        <div id="board" class="board"></div>
+        <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
         <p id="instruction" class="instruction"></p>
 
         <div class="panel input-panel">
@@ -43,13 +49,17 @@
             <button id="noteModeBtn" class="secondary small" type="button">Pencil Off</button>
           </div>
           <div id="digitPad" class="digit-pad"></div>
+          <div class="undo-redo">
+            <button id="undoBtn" class="secondary" type="button" disabled>Undo</button>
+            <button id="redoBtn" class="secondary" type="button" disabled>Redo</button>
+          </div>
           <button id="clearCellBtn" class="secondary" type="button">Clear Active Cell</button>
         </div>
 
         <div class="actions">
-          <button id="checkBtn">Check Selection</button>
-          <button id="hintBtn" class="secondary">Hint</button>
-          <button id="nextBtn" class="secondary">Next Puzzle</button>
+          <button id="checkBtn" type="button">Check Selection</button>
+          <button id="hintBtn" class="secondary" type="button">Hint</button>
+          <button id="nextBtn" class="secondary" type="button">Next Puzzle</button>
         </div>
         <p id="feedback" class="feedback"></p>
       </section>
@@ -61,9 +71,19 @@
         <p id="hintLevel">No hint</p>
         <h3>Explanation</h3>
         <p id="explanation">Solve and check to see explanation.</p>
+        <button id="resetBtn" class="secondary danger" type="button">Reset All Progress</button>
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <!-- Completion overlay — shown when all 8 techniques are mastered -->
+    <div id="completionOverlay" class="completion-overlay" hidden>
+      <div class="completion-card">
+        <h2>All Techniques Mastered!</h2>
+        <p>You've completed all 24 puzzles across 8 Sudoku solving techniques.</p>
+        <button id="closeCompletionBtn" type="button">Continue Practising</button>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
   </body>
 </html>
