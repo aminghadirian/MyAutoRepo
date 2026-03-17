@@ -38,7 +38,7 @@ const state = {
   currentMethod:    METHOD_ORDER[0],
   currentPuzzle:    0,
   selected:         new Set(),
-  hintLevel:        0,
+  hintLevel:        1,
   noteMode:         false,
   activeCellKey:    null,
   highlightedDigit: null,
@@ -418,7 +418,7 @@ function onHint() {
 
 function resetRound() {
   state.selected        = new Set();
-  state.hintLevel       = 0;
+  state.hintLevel       = 1;
   state.activeCellKey   = null;
   state.highlightedDigit = null;
 }
