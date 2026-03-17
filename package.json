@@ -1,0 +1,17 @@
+{
+  "name": "sudoku-technique-trainer",
+  "version": "1.0.0",
+  "description": "Interactive Sudoku technique trainer — vanilla JS, no build step.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint app.js data.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}
