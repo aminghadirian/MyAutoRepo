@@ -38,9 +38,9 @@ export const METHODS = {
     level: "Foundation",
     theory: "A naked single is a cell with only one possible digit.",
     puzzles: [
-      sc("Example 1", "Select the naked single.", BOARDS.A, { r1c3: "4", r1c4: "2,6" }, ["r1c3"], "r1c3 is forced to 4."),
-      sc("Example 2", "Select the naked single.", BOARDS.A, { r2c2: "7", r2c3: "2,7" }, ["r2c2"], "r2c2 has one candidate."),
-      sc("Example 3", "Select the naked single.", BOARDS.A, { r8c1: "2", r8c3: "2,6" }, ["r8c1"], "r8c1 is immediately solved."),
+      sc("Example 1", "Select the naked single.", BOARDS.A, { r5c5: "5", r4c4: "5,7,9", r4c6: "1,4,7" }, ["r5c5"], "r5c5 can only be 5 — all other digits are eliminated by row 5, column 5, or box 5."),
+      sc("Example 2", "Select the naked single.", BOARDS.A, { r7c6: "7", r7c5: "3,5", r6c6: "1,4" }, ["r7c6"], "r7c6 can only be 7 — every other digit appears in row 7, column 6, or box 8."),
+      sc("Example 3", "Select the naked single.", BOARDS.A, { r7c9: "4", r6c8: "4,5,9" }, ["r7c9"], "r7c9 is forced to 4 — all other digits are excluded by row 7, column 9, or box 9."),
     ],
   },
   hiddenSingle: {
@@ -48,9 +48,9 @@ export const METHODS = {
     level: "Foundation",
     theory: "A hidden single is the only place for a digit in a unit.",
     puzzles: [
-      sc("Row hidden single", "Select the hidden single for 9.", BOARDS.A, { r4c2: "2,5,7", r4c4: "5,7,9", r4c6: "1,2,7" }, ["r4c4"], "Only r4c4 can take 9."),
-      sc("Column hidden single", "Select the hidden single for 1 in column 2.", BOARDS.A, { r1c2: "3,5", r2c2: "3,4", r5c2: "1,4,9" }, ["r5c2"], "1 appears only at r5c2 in the column."),
-      sc("Box hidden single", "Select the hidden single in box 1.", BOARDS.A, { r1c1: "1,3,5", r1c2: "3,5", r2c1: "1,4,9" }, ["r2c1"], "In this box, only r2c1 can be 9."),
+      sc("Row hidden single", "Find the hidden single for 5 in row 3.", BOARDS.A, { r3c7: "1,3,4,5,7", r3c5: "3,4", r3c9: "2,4,7" }, ["r3c7"], "r3c7 is the only cell in row 3 that can hold 5 — no other empty cell in that row has 5 as a candidate."),
+      sc("Column hidden single", "Find the hidden single for 4 in column 5.", BOARDS.A, { r3c5: "3,4", r7c5: "3,5", r5c5: "5" }, ["r3c5"], "r3c5 is the only cell in column 5 that can hold 4 — check every other empty cell in the column."),
+      sc("Box hidden single", "Find the hidden single for 8 in box 7.", BOARDS.A, { r8c2: "2,7,8", r8c1: "2,3", r8c3: "2,3,7" }, ["r8c2"], "r8c2 is the only cell in box 7 (bottom-left) that can hold 8."),
     ],
   },
   lockedCandidates: {
