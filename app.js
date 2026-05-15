@@ -302,7 +302,12 @@ function renderBoard() {
 
       cell.addEventListener("click", () => {
         state.activeCellKey = key;
-        if (state.selected.has(key)) state.selected.delete(key); else state.selected.add(key);
+        if (state.hintLevel >= 1 && !relevant.has(key)) {
+          feedbackEl.textContent = "That cell is grayed out — select a highlighted cell.";
+          feedbackEl.className   = "feedback";
+        } else {
+          if (state.selected.has(key)) state.selected.delete(key); else state.selected.add(key);
+        }
         if (hasValue) state.highlightedDigit = state.highlightedDigit === mark.value ? null : mark.value;
         selectedCellsEl.textContent = [...state.selected].sort().join(", ") || "None";
         renderBoard();
@@ -469,11 +474,14 @@ function handleKeydown(e) {
     if (!nextEl) return;
     nextEl.focus();
     if (!nextEl.classList.contains("given")) {
+      const scn     = currentScenario();
+      const rel     = new Set([...Object.keys(scn.candidates), ...scn.targets]);
+      const isIrrel = state.hintLevel >= 1 && !rel.has(nextKey);
       state.activeCellKey = nextKey;
       if (e.shiftKey) {
-        state.selected.add(nextKey);
+        if (!isIrrel) state.selected.add(nextKey);
       } else {
-        state.selected = new Set([nextKey]);
+        state.selected = isIrrel ? new Set() : new Set([nextKey]);
       }
       selectedCellsEl.textContent = [...state.selected].sort().join(", ") || "None";
       renderBoard();
