@@ -39,7 +39,7 @@ const state = {
   currentPuzzle:    0,
   selected:         new Set(),
   hintLevel:        1,
-  noteMode:         false,
+  noteMode:         true,
   activeCellKey:    null,
   highlightedDigit: null,
   progress:         loadProgress(),
@@ -233,12 +233,9 @@ function renderCurriculum() {
   });
 }
 
-function renderDigitPad(boardStr) {
-  // Dim digit-pad buttons for digits that appear as givens in the current board.
-  const givenDigits = new Set(boardStr.split("").filter((v) => v !== "0"));
-  [...digitPad.children].forEach((btn) => {
-    btn.classList.toggle("digit-given", givenDigits.has(btn.textContent));
-  });
+function renderDigitPad() {
+  // All digits may be needed as pencil marks — keep pad fully active.
+  [...digitPad.children].forEach((btn) => btn.classList.remove("digit-given"));
 }
 
 function renderBoard() {
@@ -343,7 +340,7 @@ function render() {
   explanationEl.textContent = "Solve and check to see explanation.";
   renderBoard();
   renderCurriculum();
-  renderDigitPad(scn.board);
+  renderDigitPad();
 }
 
 // ── User actions ──────────────────────────────────────────────────────────────
@@ -380,13 +377,24 @@ function clearActiveCell() {
 }
 
 function checkSelection() {
-  const scn = currentScenario();
-  const a   = [...state.selected].sort();
-  const b   = [...scn.targets].sort();
-  const ok  = a.length === b.length && a.every((v, i) => v === b[i]);
+  const scn   = currentScenario();
+  const marks = marksForScenario();
+
+  const ok = scn.targets.every((target) => {
+    const expected = (scn.candidates[target] || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .sort();
+    const actual = [...(marks[target]?.notes || [])].sort();
+    return (
+      actual.length === expected.length &&
+      actual.every((v, i) => v === expected[i])
+    );
+  });
 
   if (!ok) {
-    feedbackEl.textContent = "Not quite. Try another hint level.";
+    feedbackEl.textContent = "Not quite — pencil the exact candidates into each target cell and try again.";
     feedbackEl.className   = "feedback bad";
     return;
   }
@@ -429,7 +437,16 @@ function resetRound() {
 }
 
 function onNext() {
-  state.currentPuzzle = (state.currentPuzzle + 1) % 3;
+  if (state.currentPuzzle < 2) {
+    state.currentPuzzle += 1;
+  } else {
+    const idx = METHOD_ORDER.indexOf(state.currentMethod);
+    if (idx < METHOD_ORDER.length - 1) {
+      state.currentMethod = METHOD_ORDER[idx + 1];
+      state.currentPuzzle = 0;
+      syncMethodSelect();
+    }
+  }
   resetRound();
   saveSession();
   startTimer();
