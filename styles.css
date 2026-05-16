@@ -51,7 +51,6 @@ select{border:1px solid var(--border);padding:.65rem;background:var(--panel);col
 [data-theme="dark"] .input-panel{background:#12151e}
 .digit-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin:.5rem 0}
 .digit-pad button{padding:.5rem}
-.digit-pad button.digit-given{opacity:.35}
 .undo-redo{display:flex;gap:.35rem;margin:.35rem 0}
 .undo-redo button{flex:1}
 .actions{display:grid;gap:.45rem}
